@@ -1,0 +1,54 @@
+name: Refresh CI Dashboard
+
+on:
+  # Auto-refresh every 4 hours
+  schedule:
+    - cron: "0 */4 * * *"
+
+  # Manual trigger from GitHub UI
+  workflow_dispatch:
+
+  # Also refresh when source code changes
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "requirements.txt"
+
+permissions:
+  contents: write   # needed to push to gh-pages branch
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate dashboard
+        run: python src/main.py
+        env:
+          CLICKUP_API_TOKEN: ${{ secrets.CLICKUP_API_TOKEN }}
+          CLICKUP_SPACE_ID: "90154275110"
+          CLICKUP_TEAM_ID: "90151097204"
+          OUTPUT_DIR: output
+          REFRESH_INTERVAL_HOURS: "0"   # run once and exit
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./output
+          publish_branch: gh-pages
+          force_orphan: true            # keeps gh-pages branch lean
+          commit_message: "Dashboard refresh ${{ github.run_number }} [skip ci]"

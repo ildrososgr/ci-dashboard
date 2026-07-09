@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  dashboard:
+    build: .
+    env_file: .env
+    volumes:
+      # Generated dashboard ends up in ./output/index.html on your host
+      - ./output:/app/output
+    restart: "no"          # Change to "unless-stopped" for daemon mode
+
+  # ── Daemon mode (auto-refresh every N hours) ──────────────────────────────
+  # Uncomment the block below and comment out the service above to run
+  # the fetcher continuously inside Docker.
+  #
+  # dashboard-daemon:
+  #   build: .
+  #   env_file: .env
+  #   environment:
+  #     REFRESH_INTERVAL_HOURS: "4"
+  #   volumes:
+  #     - ./output:/app/output
+  #   restart: unless-stopped
