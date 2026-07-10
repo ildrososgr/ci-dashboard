@@ -117,8 +117,7 @@ def classify_from_tasks(tasks: list) -> str:
     Rules:
       • All tasks closed           → 'green'
       • Any task in-progress       → 'yellow'
-      • All todo + any assigned    → 'yellow' (assigned but not started yet)
-      • All todo + none assigned   → 'grey'   (waiting to start)
+      • All todo tasks             → 'grey'   (waiting to start)
       • No tasks at all            → 'unknown' (empty list, skip)
     """
     if not tasks:
@@ -134,10 +133,8 @@ def classify_from_tasks(tasks: list) -> str:
     if in_prog > 0:
         return "yellow"
 
-    # All remaining tasks are "todo" — check if anything is assigned
-    open_tasks = [t for t in tasks if get_task_category(t) != "complete"]
-    any_assigned = any(len(t.get("assignees", [])) > 0 for t in open_tasks)
-    return "yellow" if any_assigned else "grey"
+    # All remaining tasks are "todo" — waiting to start.
+    return "grey"
 
 
 # ── Name parsing ──────────────────────────────────────────────────────────────
