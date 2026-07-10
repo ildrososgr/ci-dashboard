@@ -333,8 +333,17 @@ def compute_workload(active_projects: list) -> list[tuple[str, dict]]:
 
 def compute_availability(active_projects: list) -> dict[str, dict]:
     """
-    For each engineer, return their state in July, August, September 2026.
-    States: 'active', 'overdue', 'available'
+    For each engineer, return a mapping for July/August/September 2026.
+
+    Structure:
+      { engineer_name: {
+           'July':     {'state': 'active'|'overdue'|'available', 'projects': [list of project names]},
+           'August':   {...},
+           'September':{...}
+        }
+      }
+
+    The 'projects' list contains project display names that span the month.
     """
     now = datetime.now(tz=timezone.utc)
 
@@ -347,15 +356,16 @@ def compute_availability(active_projects: list) -> dict[str, dict]:
         ("September", month_start(2026, 9)),
     ]
 
-    availability: dict[str, dict[str, str]] = {}
+    availability: dict[str, dict[str, dict]] = {}
 
     for p in active_projects:
         project_due  = p["due_date"]
         is_proj_over = p["is_overdue"]
+        project_label = p.get("company") if p.get("company") != p.get("project") else p.get("project")
 
         for name in p["assignees"]:
             if name not in availability:
-                availability[name] = {m: "available" for m, _ in months}
+                availability[name] = {m: {"state": "available", "projects": []} for m, _ in months}
 
             for month_name, month_start_dt in months:
                 # Project spans this month if it has no due date (ongoing)
@@ -364,11 +374,16 @@ def compute_availability(active_projects: list) -> dict[str, dict]:
                 if not spans:
                     continue
 
-                current = availability[name][month_name]
-                if current == "available":
-                    availability[name][month_name] = "overdue" if is_proj_over else "active"
-                elif current == "active" and is_proj_over:
-                    availability[name][month_name] = "overdue"
+                cell = availability[name][month_name]
+                # append project name if not already present
+                if project_label and project_label not in cell["projects"]:
+                    cell["projects"].append(project_label)
+
+                # escalate state: available < active < overdue
+                if cell["state"] == "available":
+                    cell["state"] = "overdue" if is_proj_over else "active"
+                elif cell["state"] == "active" and is_proj_over:
+                    cell["state"] = "overdue"
 
     return availability
 
