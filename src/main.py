@@ -117,34 +117,60 @@ def run_once() -> None:
 
             # If TEAM_MEMBERS env var is set, only include projects with
             # at least one assignee matching the allowed team members.
+            def _normalize_name(text: str) -> str:
+                return " ".join(
+                    token for token in text.lower().replace(".", " ").split() if token
+                )
+
+            def _build_team_tokens(member: str) -> tuple[set[str], str]:
+                normalized = _normalize_name(member)
+                tokens = set(normalized.split())
+                short = " ".join([token[0] for token in normalized.split() if token])
+                return tokens, short
+
+            TEAM_TOKEN_DATA = [_build_team_tokens(m) for m in TEAM_MEMBERS]
+
+            def _matches_team_member(value: str) -> bool:
+                normalized = _normalize_name(value)
+                value_tokens = set(normalized.split())
+                for tokens, short in TEAM_TOKEN_DATA:
+                    if not tokens:
+                        continue
+                    if tokens.issubset(value_tokens):
+                        return True
+                    if short and short in normalized:
+                        return True
+                    # match by first and last name tokens if both present
+                    if len(tokens) >= 2:
+                        first, last = list(tokens)[:2]
+                        if first in value_tokens and last in value_tokens:
+                            return True
+                    # allow matching by first name only when the assignee is clearly a short form
+                    if len(tokens) == 1 and next(iter(tokens)) in value_tokens:
+                        return True
+                return False
+
             def _project_has_team_member(proj: dict) -> bool:
                 if not TEAM_MEMBERS:
                     return True
-                # Check raw assignees (full names / emails) and formatted display names
+
                 for a in proj.get("assignees_raw", []):
-                    # try username, email
                     for key in ("username", "email", "email_address", "emailAddress"):
-                        val = (a.get(key) or "").lower()
-                        if not val:
-                            continue
-                        for m in TEAM_MEMBERS:
-                            if m in val or m.split()[0] in val:
-                                return True
-                    # fallback: formatted short name
+                        val = a.get(key) or ""
+                        if val and _matches_team_member(val):
+                            return True
                     try:
                         from data_processor import format_assignee
-                        short = format_assignee(a).lower()
-                        for m in TEAM_MEMBERS:
-                            if m in short or m.split()[0] in short:
-                                return True
+                        short = format_assignee(a)
+                        if _matches_team_member(short):
+                            return True
                     except Exception:
                         pass
-                # Also check display names produced earlier
+
                 for name in proj.get("assignees", []):
-                    lname = name.lower()
-                    for m in TEAM_MEMBERS:
-                        if m in lname or m.split()[0] in lname:
-                            return True
+                    if name and _matches_team_member(name):
+                        return True
+
                 return False
 
             if not _project_has_team_member(project):
