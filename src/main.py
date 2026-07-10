@@ -34,6 +34,7 @@ SPACE_ID   = os.getenv("CLICKUP_SPACE_ID", "90154275110")
 TEAM_ID    = os.getenv("CLICKUP_TEAM_ID",  "90151097204")
 OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "output"))
 INTERVAL_H = float(os.getenv("REFRESH_INTERVAL_HOURS", "0"))  # 0 = run once
+TEAM_MEMBERS = [m.strip().lower() for m in os.getenv("TEAM_MEMBERS", "").split(",") if m.strip()]
 
 # Folder IDs inside CI Projects Space (hard-coded for stability)
 PROJECTS_FOLDER_ID  = "90156514552"
@@ -113,6 +114,42 @@ def run_once() -> None:
                 continue
 
             project = process_project_list(lst, tasks)
+
+            # If TEAM_MEMBERS env var is set, only include projects with
+            # at least one assignee matching the allowed team members.
+            def _project_has_team_member(proj: dict) -> bool:
+                if not TEAM_MEMBERS:
+                    return True
+                # Check raw assignees (full names / emails) and formatted display names
+                for a in proj.get("assignees_raw", []):
+                    # try username, email
+                    for key in ("username", "email", "email_address", "emailAddress"):
+                        val = (a.get(key) or "").lower()
+                        if not val:
+                            continue
+                        for m in TEAM_MEMBERS:
+                            if m in val or m.split()[0] in val:
+                                return True
+                    # fallback: formatted short name
+                    try:
+                        from data_processor import format_assignee
+                        short = format_assignee(a).lower()
+                        for m in TEAM_MEMBERS:
+                            if m in short or m.split()[0] in short:
+                                return True
+                    except Exception:
+                        pass
+                # Also check display names produced earlier
+                for name in proj.get("assignees", []):
+                    lname = name.lower()
+                    for m in TEAM_MEMBERS:
+                        if m in lname or m.split()[0] in lname:
+                            return True
+                return False
+
+            if not _project_has_team_member(project):
+                logger.info("    → skipping project (no matching team member): %s", project.get("raw_name"))
+                continue
 
             if state in ("unknown", "grey"):
                 logger.info("    → waiting (%s)", state)
