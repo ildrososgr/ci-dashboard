@@ -73,14 +73,16 @@ def _status_badge(status: str) -> str:
 
 
 def _avail_cell(state: str, content: str = "") -> str:
-    styles = {
-        "active":    ("background:#fef3c7;color:#92400e;", "Active"),
-        "overdue":   ("background:#fee2e2;color:#991b1b;", "Overdue"),
-        "available": ("background:#d1fae5;color:#065f46;", "Available"),
-    }
-    style, label = styles.get(state, ("background:#f3f4f6;color:#6b7280;", state.title()))
-    display = _e(content) if content else label
-    return f'<td class="avail-cell" style="{style}">{display}</td>'
+  styles = {
+    "active":    ("background:#fef3c7;color:#92400e;", "Active"),
+    "overdue":   ("background:#fee2e2;color:#991b1b;", "Overdue"),
+    "available": ("background:#d1fae5;color:#065f46;", "Available"),
+  }
+  style, label = styles.get(state, ("background:#f3f4f6;color:#6b7280;", state.title()))
+  display = _e(content) if content else label
+  # Use title attribute to show projects on hover; include aria-label for accessibility
+  title_attr = _e(content) if content else ""
+  return f'<td class="avail-cell" style="{style}" title="{title_attr}" aria-label="{title_attr}">{display}</td>'
 
 
 # ── Section builders ──────────────────────────────────────────────────────────
@@ -189,44 +191,48 @@ def _waiting_table(projects: list) -> str:
 
 
 def _availability_section(active_projects: list) -> str:
-    avail = compute_availability(active_projects)
-    if not avail:
-        return ""
+  avail = compute_availability(active_projects)
+  if not avail:
+    return ""
 
-    months = ["July", "August", "September"]
+  months = ["July", "August", "September"]
 
-    header_cells = "".join(f"<th>{m}</th>" for m in months)
-    rows = []
-    for engineer, month_states in sorted(avail.items()):
-        cells = "".join(
-            _avail_cell(month_states.get(m, "available"))
-            for m in months
-        )
-        rows.append(f"<tr><td class='eng-name'>{_e(engineer)}</td>{cells}</tr>")
+  header_cells = "".join(f"<th>{m}</th>" for m in months)
+  rows = []
+  for engineer, month_data in sorted(avail.items()):
+    cells_html = []
+    for m in months:
+      cell = month_data.get(m, {"state": "available", "projects": []})
+      # show project count as cell content, and full list in tooltip
+      proj_list = cell.get("projects", [])
+      content = str(len(proj_list)) if proj_list else ""
+      tooltip = "\n".join(proj_list) if proj_list else ""
+      cells_html.append(_avail_cell(cell.get("state", "available"), tooltip or content))
 
-    legend_items = [
-        ("#fef3c7", "#92400e", "Active client work"),
-        ("#fee2e2", "#991b1b", "Overdue"),
-        ("#d1fae5", "#065f46", "Available"),
-    ]
-    legend = "".join(
-        f'<span class="legend-dot" style="background:{bg};color:{fg};'
-        f'border:1px solid {fg}40;padding:2px 8px;border-radius:4px;font-size:11px">{_e(label)}</span>'
-        for bg, fg, label in legend_items
-    )
+    rows.append(f"<tr><td class='eng-name'>{_e(engineer)}</td>{''.join(cells_html)}</tr>")
 
-    return (
-        '<div class="section-header">'
-        '  <h2>Team Availability: July – August – September 2026</h2>'
-        '</div>'
-        '<div class="table-wrap">'
-        '<table class="avail-table">'
-        f'  <thead><tr><th>Engineer</th>{header_cells}</tr></thead>'
-        f'  <tbody>{"".join(rows)}</tbody>'
-        '</table>'
-        '</div>'
-        f'<div class="legend">{legend}</div>'
-    )
+  legend_items = [
+    ("#fef3c7", "#92400e", "Active client work"),
+    ("#fee2e2", "#991b1b", "Overdue"),
+    ("#d1fae5", "#065f46", "Available"),
+  ]
+  legend = "".join(
+    f'<span class="legend-dot" style="background:{bg};color:{fg};border:1px solid {fg}40;padding:2px 8px;border-radius:4px;font-size:11px">{_e(label)}</span>'
+    for bg, fg, label in legend_items
+  )
+
+  return (
+    '<div class="section-header">'
+    '  <h2>Team Availability: July – August – September 2026</h2>'
+    '</div>'
+    '<div class="table-wrap">'
+    '<table class="avail-table">'
+    f'  <thead><tr><th>Engineer</th>{header_cells}</tr></thead>'
+    f'  <tbody>{"".join(rows)}</tbody>'
+    '</table>'
+    '</div>'
+    f'<div class="legend">{legend}</div>'
+  )
 
 
 def _workload_section(workload: list) -> str:
