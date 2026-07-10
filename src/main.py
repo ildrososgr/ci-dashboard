@@ -106,15 +106,19 @@ def run_once() -> None:
             else:
                 state = initial_state
 
-            if state in ("green", "unknown"):
-                logger.info("    → skipping (%s)", state)
+            # New behavior: treat 'unknown' and 'grey' as waiting-to-start,
+            # and treat 'yellow' as active (running). Only 'green' is skipped.
+            if state == "green":
+                logger.info("    → skipping (green)")
                 continue
 
             project = process_project_list(lst, tasks)
 
-            if state == "grey":
+            if state in ("unknown", "grey"):
+                logger.info("    → waiting (%s)", state)
                 waiting_projects.append(project)
             else:
+                # yellow, red (if any slipped through) etc. count as active
                 active_projects.append(project)
 
     logger.info(
