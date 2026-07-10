@@ -92,10 +92,10 @@ def run_once() -> None:
             logger.info("  [%s] %s", initial_state.upper()[:4], name)
             tasks = client.get_tasks(lst["id"], include_closed=True, subtasks=True)
 
-            # Determine final state
+            # Determine final state based on color; only green is skipped.
             if initial_state == "unknown":
-                # No list-level status set — derive from task data
-                state = classify_from_tasks(tasks)
+                # No color set — treat as waiting, not active.
+                state = "grey"
             elif initial_state == "green":
                 # List marked complete — verify tasks are actually all closed
                 open_count = sum(1 for t in tasks if get_task_category(t) != "complete")
@@ -107,8 +107,6 @@ def run_once() -> None:
             else:
                 state = initial_state
 
-            # New behavior: treat 'unknown' and 'grey' as waiting-to-start,
-            # and treat 'yellow' as active (running). Only 'green' is skipped.
             if state == "green":
                 logger.info("    → skipping (green)")
                 continue
@@ -133,12 +131,13 @@ def run_once() -> None:
             def _matches_team_member(value: str) -> bool:
                 normalized = _normalize_name(value)
                 value_tokens = set(normalized.split())
+                normalized_no_space = normalized.replace(" ", "")
                 for tokens, short in TEAM_TOKEN_DATA:
                     if not tokens:
                         continue
                     if tokens.issubset(value_tokens):
                         return True
-                    if short and short in normalized:
+                    if short and short in normalized_no_space:
                         return True
                     # match by first and last name tokens if both present
                     if len(tokens) >= 2:
