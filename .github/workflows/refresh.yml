@@ -43,6 +43,7 @@ jobs:
           CLICKUP_TEAM_ID: "90151097204"
           OUTPUT_DIR: output
           REFRESH_INTERVAL_HOURS: "0"   # run once and exit
+          TEAM_MEMBERS: "Nikos Papachristos, John Peppas, Christos Palavouzis, Ilias Drosos, Kyriakos Tzanetolakos, Marios Serafeimidis, George Stasinopoulos"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
