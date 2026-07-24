@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="refresh" content="3600">
+  <title>CI Projects Dashboard</title>
+  <style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  background: #f0f2f5;
+  color: #111827;
+}
+
+/* Header */
+.dash-header {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: #fff;
+  padding: 28px 40px 24px;
+}
+.dash-header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.3px; }
+.dash-header .subtitle { font-size: 13px; color: rgba(255,255,255,0.75); margin-top: 4px; }
+
+/* Container */
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 32px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* Summary cards */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+.card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+.card-num { font-size: 32px; font-weight: 700; line-height: 1; }
+.card-label { font-size: 11px; color: #6b7280; margin-top: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: .3px; }
+
+/* Section headers */
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.section-header h2 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+}
+.yellow-label { color: #b45309; font-weight: 500; }
+.grey-label   { color: #6b7280; font-weight: 500; }
+.sub          { color: #6b7280; font-weight: 400; }
+.count        { font-size: 12px; color: #6b7280; }
+
+/* Tables */
+.table-wrap { overflow-x: auto; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+thead { background: #f9fafb; }
+th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+td {
+  padding: 11px 14px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #f9fafb; }
+
+.project-cell { min-width: 200px; }
+.company { display: block; font-weight: 600; color: #111827; }
+.proj-desc { display: block; font-size: 11px; color: #6b7280; margin-top: 1px; }
+.num { text-align: center; font-weight: 600; color: #374151; }
+.date { white-space: nowrap; color: #374151; }
+.overdue-date { color: #dc2626; font-weight: 500; }
+.notes { color: #6b7280; font-style: italic; }
+.eng-name { font-weight: 600; color: #111827; }
+.empty { color: #6b7280; }
+
+/* Progress */
+.prog-cell { min-width: 120px; }
+.prog-wrap {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.prog-bar { height: 100%; border-radius: 3px; transition: width .3s; }
+.prog-label { font-size: 11px; color: #6b7280; font-weight: 500; }
+
+/* Avatars */
+.avatars { display: flex; gap: 4px; flex-wrap: wrap; }
+.avatar {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; color: #fff;
+  flex-shrink: 0;
+}
+.unassigned { color: #9ca3af; font-style: italic; font-size: 12px; }
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Availability */
+.avail-table td, .avail-table th { text-align: center; }
+.avail-table td:first-child { text-align: left; }
+.avail-cell {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 10px 14px;
+  border-radius: 4px;
+}
+.legend { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.legend-dot { display: inline-block; font-size: 11px; }
+
+/* Workload */
+.workload-list { display: flex; flex-direction: column; gap: 12px; background: #fff; border-radius: 10px; padding: 16px 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.workload-row {}
+.workload-header { display: flex; justify-content: space-between; align-items: center; }
+.workload-count { font-size: 18px; font-weight: 700; }
+.workload-projects { font-size: 11px; color: #6b7280; margin: 2px 0 5px; }
+.workload-bar-wrap { height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
+.workload-bar { height: 100%; border-radius: 3px; }
+
+/* Flags */
+.flags-list {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  padding: 16px 20px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.flags-list li { font-size: 13px; color: #374151; line-height: 1.5; }
+.flags-list li strong { color: #111827; }
+
+/* Two-column layout */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  font-size: 11px;
+  color: #9ca3af;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 16px;
+}
+
+@media (max-width: 900px) {
+  .cards { grid-template-columns: repeat(2, 1fr); }
+  .two-col { grid-template-columns: 1fr; }
+  .container { padding: 16px; }
+  .dash-header { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="dash-header">
+  <h1>CI Projects Dashboard</h1>
+  <div class="subtitle">July 24, 2026 &middot; Modern Workplace &amp; Cloud Team</div>
+</div>
+
+<div class="container">
+
+  <div class="cards"><div class="card" style="border-top:4px solid #f59e0b;background:#fef3c7">  <div class="card-num" style="color:#f59e0b">10</div>  <div class="card-label">Active Projects (Yellow)</div></div><div class="card" style="border-top:4px solid #9ca3af;background:#f3f4f6">  <div class="card-num" style="color:#9ca3af">2</div>  <div class="card-label">Waiting to Start (Grey)</div></div><div class="card" style="border-top:4px solid #3b82f6;background:#dbeafe">  <div class="card-num" style="color:#3b82f6">0</div>  <div class="card-label">New (Unassigned)</div></div><div class="card" style="border-top:4px solid #ef4444;background:#fee2e2">  <div class="card-num" style="color:#ef4444">0</div>  <div class="card-label">Overdue</div></div><div class="card" style="border-top:4px solid #7c3aed;background:#ede9fe">  <div class="card-num" style="color:#7c3aed">7</div>  <div class="card-label">Engineers</div></div></div>
+
+  <div>
+    <div class="section-header">  <h2>Active Projects <span class="yellow-label">(Yellow)</span></h2>  <span class="count">10 projects</span></div><div class="table-wrap"><table>  <thead><tr>    <th>Project</th><th>Progress</th>    <th title="In Progress">In Prog.</th><th>To Do</th>    <th>Start Date</th><th>Due Date</th>    <th>Assignees</th><th>Status</th>  </tr></thead>  <tbody><tr>  <td class="project-cell">    <span class="company">AVAX</span>    <span class="proj-desc">Microsoft 365 Email &amp; Hybrid enablement project</span>  </td>  <td class="prog-cell"><div class="prog-wrap" title="0% complete">  <div class="prog-bar" style="width:0%;background:#ef4444"></div></div><span class="prog-label">0%</span></td>  <td class="num">5</td>  <td class="num">67</td>  <td class="date">—</td>  <td class="date ">—</td>  <td><div class="avatars" title="KYRIAKOS T. marios s."><span class="avatar" style="background:#7c3aed" title="KYRIAKOS T.">KT</span><span class="avatar" style="background:#0369a1" title="marios s.">MS</span></div></td>  <td><span class="badge" style="background:#f3f4f6;color:#374151;border:1px solid #37415130">in progress</span></td></tr><tr>  <td class="project-cell">    <span class="company">Mistakidis</span>    <span class="proj-desc">M365 tenant Migration</span>  </td>  <td class="prog-cell"><div class="prog-wrap" title="0% complete">  <div class="prog-bar" style="width:0%;background:#ef4444"></div></div><span class="prog-label">0%</span></td>  <td class="num">3</td>  <td class="num">14</td>  <td class="date">—</td>  <td class="date ">—</td>  <td><div class="avatars" title="John P. KYRIAKOS T."><span class="avatar" style="background:#7c3aed" title="John P.">JP</span><span class="avatar" style="background:#0369a1" title="KYRIAKOS T.">KT</span></div></td>  <td><span class="badge" style="background:#f3f4f6;color:#374151;border:1px solid #37415130">in progress</span></td></tr><tr>  <td class="project-cell">    <span class="company">IIBEAA</span>    <span class="proj-desc">M365 migration</span>  </td>  <td class="prog-cell"><div class="prog-wrap" title="46% complete">  <div class="prog-bar" style="width:46%;background:#f59e0b"></div></div><span class="prog-label">46%</span></td>  <td class="num">2</td>  <td class="num">19</td>  <td class="date">Feb 5</td>  <td class="date ">—</td>  <td><div class="avatars" title="KYRIAKOS T. John P."><span class="avatar" style="background:#7c3aed" title="KYRIAKOS T.">KT</span><span class="avatar" style="background:#0369a1" title="John P.">JP</span></div></td>  <td><span class="badge" style="background:#f3f4f6;color:#374151;border:1px solid #37415130">in progress</span></td></tr><tr>  <td class="project-cell">    <span class="company">ION</span>    <span class="proj-desc">Tenant to tenant migration</span>  </td>  <td class="prog-cell"><div class="prog-wrap" title="2% complete">  <div class="prog-bar" style="width:2%;background:#ef4444"></div></div><span class="prog-label">2%</span></td>  <td class="num">2</td>  <td class="num">56</td>  <td class="date">—</td>  <td class="date ">—</td>  <td><div class="avatars" title="Ilias D. Papachristos N. Chris P. KYRIAKOS T. George S. marios s."><span class="avatar" style="background:#7c3aed" title="Ilias D.">ID</span><span class="avatar" style="background:#0369a1" title="Papachristos N.">PN</span><span class="avatar" style="background:#b45309" title="Chris P.">CP</span><span class="avatar" style="background:#0f766e" title="KYRIAKOS T.">KT</span><span class="avatar" style="background:#9f1239" title="George S.">GS</span><span class="avatar" style="background:#1d4ed8" title="marios s.">MS</span></div></td>  <td><span class="badge" style="background:#f3f4f6;color:#374151;border:1px solid #37415130">in progress</span></td></tr><tr>  <td class="project-cell">    <span class="company">ΜΕΒΓΑΛ</span>    <span class="proj-desc">Microsoft 365 Security Assessment (copy)</span>  </td>  <td class="prog-cell"><div class="prog-wrap" title="0% complete">  <div class="prog-bar" style="width:0%;background:#ef4444"></div></div><span class="prog-label">0%</span></td>  <td class="num">1</td>  <td class="num">3</td>  <td class="date">—</td>  <td class="date ">—</td>  <td><div class="avatars" title="KYRIAKOS T. Ilias D."><span class="avatar" style="background:#7c3aed" title="KYRIAKOS T.">KT</span><span class="avatar" style="background:#0369a1" title="Ilias D.">ID</span></div></td>  <td><span class="badge" style="background:#f3f4f6;color:#374151;border:1px solid #37415130">in progress</span></td></tr><tr>  <td class="project-cell">    <span class="company">Raycap</span>    <span class="proj-desc">M365 Enhancements Intune/Entra</span>  </td>  <td class="prog-cell"><div class="prog-wrap" title="86% complete">  <div class="prog-bar" style="width:86%;background:#10b981"></div></div><span class="prog-label">86%</span></td>  <td class="num">1</td>  <td class="num">1</td>  <td class="date">—</td>  <td class="date ">—</td>  <td><div class="avatars" title="Chris P. George S. John P. Ilias D."><span class="avatar" style="background:#7c3aed" title="Chris P.">CP</span><span class="avatar" style="background:#0369a1" title="George S.">GS</span><span class="avatar" style="background:#b45309" title="John P.">JP</span><span class="avatar" style="background:#0f766e" title="Ilias D.">ID</span></div></td>  <td><span class="badge" style="background:#f3f4f6;color:#374151;border:1px solid #37415130">in progress</span></td></tr><tr>  <td class="project-cell">    <span class="company">AVRAMAR</span>    <span class="proj-desc">Professional Services (MIP-training) | PRJ-1131</span>  </td>  <td class="prog-cell"><div class="prog-wrap" title="0% complete">  <div class="prog-bar" style="width:0%;background:#ef4444"></div></div><span class="prog-label">0%</span></td>  <td class="num">2</td>  <td class="num">8</td>  <td class="date">—</td>  <td class="date ">—</td>  <td><div class="avatars" title="John P."><span class="avatar" style="background:#7c3aed" title="John P.">JP</span></div></td>  <td><span class="badge" style="background:#f3f4f6;color:#374151;border:1px solid #37415130">in progress</span></td></tr><tr>  <td class="project-cell">    <span class="company">TMS</span>    <span class="proj-desc">DLP Premium Project (including training)</span>  </td>  <td class="prog-cell"><div class="prog-wrap" title="0% complete">  <div class="prog-bar" style="width:0%;background:#ef4444"></div></div><span class="prog-label">0%</span></td>  <td class="num">0</td>  <td class="num">2</td>  <td class="date">—</td>  <td class="date ">—</td>  <td><div class="avatars" title="John P."><span class="avatar" style="background:#7c3aed" title="John P.">JP</span></div></td>  <td><span class="badge" style="background:#f3f4f6;color:#374151;border:1px solid #37415130">in progress</span></td></tr><tr>  <td class="project-cell">    <span class="company">SG Automotive</span>    <span class="proj-desc">MIP DLP Project</span>  </td>  <td class="prog-cell"><div class="prog-wrap" title="0% complete">  <div class="prog-bar" style="width:0%;background:#ef4444"></div></div><span class="prog-label">0%</span></td>  <td class="num">4</td>  <td class="num">26</td>  <td class="date">Dec 18 &#x27;25</td>  <td class="date ">—</td>  <td><div class="avatars" title="KYRIAKOS T. John P."><span class="avatar" style="background:#7c3aed" title="KYRIAKOS T.">KT</span><span class="avatar" style="background:#0369a1" title="John P.">JP</span></div></td>  <td><span class="badge" style="background:#f3f4f6;color:#374151;border:1px solid #37415130">in progress</span></td></tr><tr>  <td class="project-cell">    <span class="company">Bernitsas</span>    <span class="proj-desc">M365 Purview Deployment - DLP/MIP</span>  </td>  <td class="prog-cell"><div class="prog-wrap" title="0% complete">  <div class="prog-bar" style="width:0%;background:#ef4444"></div></div><span class="prog-label">0%</span></td>  <td class="num">0</td>  <td class="num">1</td>  <td class="date">—</td>  <td class="date ">—</td>  <td><div class="avatars" title="John P."><span class="avatar" style="background:#7c3aed" title="John P.">JP</span></div></td>  <td><span class="badge" style="background:#f3f4f6;color:#374151;border:1px solid #37415130">in progress</span></td></tr></tbody></table></div>
+  </div>
+
+  <div>
+    <div class="section-header">  <h2>Waiting to Start <span class="grey-label">(Grey / To Do)</span></h2>  <span class="count">2 projects</span></div><div class="table-wrap"><table>  <thead><tr>    <th>Project</th><th>Tasks</th>    <th>Start Date</th><th>Due Date</th>    <th>Assignees</th><th>Notes</th>  </tr></thead>  <tbody><tr>  <td class="project-cell">    <span class="company">ALTERLIFE FITNESS EXCELLENCE</span>    <span class="proj-desc">M365 Services - PRJ-1128</span>  </td>  <td class="num">17</td>  <td class="date">—</td>  <td class="date ">—</td>  <td><div class="avatars" title="KYRIAKOS T. Ilias D."><span class="avatar" style="background:#7c3aed" title="KYRIAKOS T.">KT</span><span class="avatar" style="background:#0369a1" title="Ilias D.">ID</span></div></td>  <td class="notes"></td></tr><tr>  <td class="project-cell">    <span class="company">Sunlight</span>    <span class="proj-desc">Retention Policies 365 (6/23 - 6/29)</span>  </td>  <td class="num">2</td>  <td class="date">Jun 22 &#x27;25</td>  <td class="date overdue-date">Jun 29 &#x27;25 (overdue)</td>  <td><div class="avatars" title="Papachristos N."><span class="avatar" style="background:#7c3aed" title="Papachristos N.">PN</span></div></td>  <td class="notes">Significantly overdue</td></tr></tbody></table></div>
+  </div>
+
+  <div>
+    <div class="section-header">  <h2>Team Availability: July – August – September 2026</h2></div><div class="table-wrap"><table class="avail-table">  <thead><tr><th>Engineer</th><th>July</th><th>August</th><th>September</th></tr></thead>  <tbody><tr><td class='eng-name'>Chris P.</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="ION
+Raycap" aria-label="ION
+Raycap">ION
+Raycap</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="ION
+Raycap" aria-label="ION
+Raycap">ION
+Raycap</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="ION
+Raycap" aria-label="ION
+Raycap">ION
+Raycap</td></tr><tr><td class='eng-name'>George S.</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="ION
+Raycap" aria-label="ION
+Raycap">ION
+Raycap</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="ION
+Raycap" aria-label="ION
+Raycap">ION
+Raycap</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="ION
+Raycap" aria-label="ION
+Raycap">ION
+Raycap</td></tr><tr><td class='eng-name'>Ilias D.</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="ION
+ΜΕΒΓΑΛ
+Raycap" aria-label="ION
+ΜΕΒΓΑΛ
+Raycap">ION
+ΜΕΒΓΑΛ
+Raycap</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="ION
+ΜΕΒΓΑΛ
+Raycap" aria-label="ION
+ΜΕΒΓΑΛ
+Raycap">ION
+ΜΕΒΓΑΛ
+Raycap</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="ION
+ΜΕΒΓΑΛ
+Raycap" aria-label="ION
+ΜΕΒΓΑΛ
+Raycap">ION
+ΜΕΒΓΑΛ
+Raycap</td></tr><tr><td class='eng-name'>John P.</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="Mistakidis
+IIBEAA
+Raycap
+AVRAMAR
+TMS
+SG Automotive
+Bernitsas" aria-label="Mistakidis
+IIBEAA
+Raycap
+AVRAMAR
+TMS
+SG Automotive
+Bernitsas">Mistakidis
+IIBEAA
+Raycap
+AVRAMAR
+TMS
+SG Automotive
+Bernitsas</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="Mistakidis
+IIBEAA
+Raycap
+AVRAMAR
+TMS
+SG Automotive
+Bernitsas" aria-label="Mistakidis
+IIBEAA
+Raycap
+AVRAMAR
+TMS
+SG Automotive
+Bernitsas">Mistakidis
+IIBEAA
+Raycap
+AVRAMAR
+TMS
+SG Automotive
+Bernitsas</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="Mistakidis
+IIBEAA
+Raycap
+AVRAMAR
+TMS
+SG Automotive
+Bernitsas" aria-label="Mistakidis
+IIBEAA
+Raycap
+AVRAMAR
+TMS
+SG Automotive
+Bernitsas">Mistakidis
+IIBEAA
+Raycap
+AVRAMAR
+TMS
+SG Automotive
+Bernitsas</td></tr><tr><td class='eng-name'>KYRIAKOS T.</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="AVAX
+Mistakidis
+IIBEAA
+ION
+ΜΕΒΓΑΛ
+SG Automotive" aria-label="AVAX
+Mistakidis
+IIBEAA
+ION
+ΜΕΒΓΑΛ
+SG Automotive">AVAX
+Mistakidis
+IIBEAA
+ION
+ΜΕΒΓΑΛ
+SG Automotive</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="AVAX
+Mistakidis
+IIBEAA
+ION
+ΜΕΒΓΑΛ
+SG Automotive" aria-label="AVAX
+Mistakidis
+IIBEAA
+ION
+ΜΕΒΓΑΛ
+SG Automotive">AVAX
+Mistakidis
+IIBEAA
+ION
+ΜΕΒΓΑΛ
+SG Automotive</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="AVAX
+Mistakidis
+IIBEAA
+ION
+ΜΕΒΓΑΛ
+SG Automotive" aria-label="AVAX
+Mistakidis
+IIBEAA
+ION
+ΜΕΒΓΑΛ
+SG Automotive">AVAX
+Mistakidis
+IIBEAA
+ION
+ΜΕΒΓΑΛ
+SG Automotive</td></tr><tr><td class='eng-name'>Papachristos N.</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="ION" aria-label="ION">ION</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="ION" aria-label="ION">ION</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="ION" aria-label="ION">ION</td></tr><tr><td class='eng-name'>marios s.</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="AVAX
+ION" aria-label="AVAX
+ION">AVAX
+ION</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="AVAX
+ION" aria-label="AVAX
+ION">AVAX
+ION</td><td class="avail-cell" style="background:#fef3c7;color:#92400e;" title="AVAX
+ION" aria-label="AVAX
+ION">AVAX
+ION</td></tr></tbody></table></div><div class="legend"><span class="legend-dot" style="background:#fef3c7;color:#92400e;border:1px solid #92400e40;padding:2px 8px;border-radius:4px;font-size:11px">Active client work</span><span class="legend-dot" style="background:#fee2e2;color:#991b1b;border:1px solid #991b1b40;padding:2px 8px;border-radius:4px;font-size:11px">Overdue</span><span class="legend-dot" style="background:#d1fae5;color:#065f46;border:1px solid #065f4640;padding:2px 8px;border-radius:4px;font-size:11px">Available</span></div>
+  </div>
+
+  <div class="two-col">
+    <div><div class="section-header"><h2>Team Workload <span class="sub">(Client Projects)</span></h2></div><div class="workload-list"><div class="workload-row">  <div class="workload-header">    <span class="eng-name">KYRIAKOS T.</span>    <span class="workload-count" style="color:#ef4444">202</span>  </div>  <div class="workload-projects">AVAX, Mistakidis, IIBEAA, ION, ΜΕΒΓΑΛ, SG Automotive</div>  <div class="workload-bar-wrap">    <div class="workload-bar" style="width:100%;background:#ef4444"></div>  </div></div><div class="workload-row">  <div class="workload-header">    <span class="eng-name">marios s.</span>    <span class="workload-count" style="color:#ef4444">130</span>  </div>  <div class="workload-projects">AVAX, ION</div>  <div class="workload-bar-wrap">    <div class="workload-bar" style="width:64%;background:#ef4444"></div>  </div></div><div class="workload-row">  <div class="workload-header">    <span class="eng-name">John P.</span>    <span class="workload-count" style="color:#ef4444">83</span>  </div>  <div class="workload-projects">Mistakidis, IIBEAA, Raycap, AVRAMAR, TMS, SG Automotive, Bernitsas</div>  <div class="workload-bar-wrap">    <div class="workload-bar" style="width:41%;background:#ef4444"></div>  </div></div><div class="workload-row">  <div class="workload-header">    <span class="eng-name">Ilias D.</span>    <span class="workload-count" style="color:#ef4444">64</span>  </div>  <div class="workload-projects">ION, ΜΕΒΓΑΛ, Raycap</div>  <div class="workload-bar-wrap">    <div class="workload-bar" style="width:32%;background:#ef4444"></div>  </div></div><div class="workload-row">  <div class="workload-header">    <span class="eng-name">Chris P.</span>    <span class="workload-count" style="color:#ef4444">60</span>  </div>  <div class="workload-projects">ION, Raycap</div>  <div class="workload-bar-wrap">    <div class="workload-bar" style="width:30%;background:#ef4444"></div>  </div></div><div class="workload-row">  <div class="workload-header">    <span class="eng-name">George S.</span>    <span class="workload-count" style="color:#ef4444">60</span>  </div>  <div class="workload-projects">ION, Raycap</div>  <div class="workload-bar-wrap">    <div class="workload-bar" style="width:30%;background:#ef4444"></div>  </div></div><div class="workload-row">  <div class="workload-header">    <span class="eng-name">Papachristos N.</span>    <span class="workload-count" style="color:#ef4444">58</span>  </div>  <div class="workload-projects">ION</div>  <div class="workload-bar-wrap">    <div class="workload-bar" style="width:29%;background:#ef4444"></div>  </div></div></div></div>
+    <div><div class="section-header"><h2>Flags &amp; Blockers</h2></div><ul class="flags-list"><li><strong>KYRIAKOS T. heavily loaded</strong> — 202 client tasks across 6 projects</li><li><strong>marios s. heavily loaded</strong> — 130 client tasks across 2 projects</li><li><strong>John P. heavily loaded</strong> — 83 client tasks across 7 projects</li><li><strong>Ilias D. heavily loaded</strong> — 64 client tasks across 3 projects</li><li><strong>Chris P. heavily loaded</strong> — 60 client tasks across 2 projects</li><li><strong>George S. heavily loaded</strong> — 60 client tasks across 2 projects</li><li><strong>Papachristos N. heavily loaded</strong> — 58 client tasks across 1 projects</li><li><strong>No projects scheduled beyond this month</strong> — consider adding due dates for upcoming deliverables</li><li><strong>2 waiting projects pending</strong> — 0 unassigned, no dates set</li></ul></div>
+  </div>
+
+  <div>
+    <div class="section-header">  <h2>Internal / R&amp;D</h2>  <span class="count">9 active</span></div><div class="table-wrap"><table>  <thead><tr><th>Project</th><th>Tasks</th><th>Owner</th></tr></thead>  <tbody><tr>  <td>CI - Internal</td>  <td class="num">26</td>  <td><div class="avatars" title="KYRIAKOS T. Ilias D."><span class="avatar" style="background:#7c3aed" title="KYRIAKOS T.">KT</span><span class="avatar" style="background:#0369a1" title="Ilias D.">ID</span></div></td></tr><tr>  <td>CI - Internal</td>  <td class="num">30+</td>  <td><div class="avatars" title="Chris P. Ilias D. George S."><span class="avatar" style="background:#7c3aed" title="Chris P.">CP</span><span class="avatar" style="background:#0369a1" title="Ilias D.">ID</span><span class="avatar" style="background:#b45309" title="George S.">GS</span></div></td></tr><tr>  <td>CI - Internal</td>  <td class="num">30</td>  <td><div class="avatars" title="Chris P. Ilias D."><span class="avatar" style="background:#7c3aed" title="Chris P.">CP</span><span class="avatar" style="background:#0369a1" title="Ilias D.">ID</span></div></td></tr><tr>  <td>CI - Internal</td>  <td class="num">15</td>  <td><span class="unassigned">Unassigned</span></td></tr><tr>  <td>CI - Internal</td>  <td class="num">26</td>  <td><span class="unassigned">Unassigned</span></td></tr><tr>  <td>CI - Internal</td>  <td class="num">15</td>  <td><span class="unassigned">Unassigned</span></td></tr><tr>  <td>CI - Internal</td>  <td class="num">1</td>  <td><div class="avatars" title="George S."><span class="avatar" style="background:#7c3aed" title="George S.">GS</span></div></td></tr><tr>  <td>CI - Internal</td>  <td class="num">4</td>  <td><span class="unassigned">Unassigned</span></td></tr><tr>  <td>CI Report with Presales Technical Sessions</td>  <td class="num">3</td>  <td><span class="unassigned">Unassigned</span></td></tr></tbody></table></div>
+  </div>
+
+  <div class="footer">
+    <p>Source: CI Projects Space &nbsp;&middot;&nbsp; Yellow = active &nbsp;&middot;&nbsp;
+       Grey = waiting &nbsp;&middot;&nbsp; Green = excluded (complete) &nbsp;&middot;&nbsp;
+       Team: Modern Workplace &amp; Cloud (7 engineers)</p>
+    <p style="margin-top:4px">Generated Jul 24, 2026 21:08 UTC</p>
+  </div>
+
+</div>
+</body>
+</html>
